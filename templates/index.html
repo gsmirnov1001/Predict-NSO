@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ПредиктНСО — оценка недвижимости в НСО</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/leaflet.css') }}"/>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/MarkerCluster.css') }}"/>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/MarkerCluster.Default.css') }}"/>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+<nav>
+  <a class="logo" href="#" onclick="go('home',0)">
+    <div class="logo-mark">
+      <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2.5 9L10 2.5L17.5 9V18H12.5V13.5H7.5V18H2.5V9Z" fill="white" opacity="0.95"/>
+      </svg>
+    </div>
+    <div>
+      <div class="logo-t"><span class="logo-predikt">Предикт</span><span class="logo-nso">НСО</span></div>
+      <span class="logo-s">Новосибирская область</span>
+    </div>
+  </a>
+  <div class="navlinks">
+    <button class="nl on"  onclick="go('home',this)">Главная</button>
+    <button class="nl" onclick="go('est',this)">Оценить квартиру</button>
+    <button class="nl" onclick="go('map',this)">Карта районов</button>
+    <button class="nl" onclick="go('check',this)">Проверить объявление</button>
+    <button class="nl" onclick="go('cmp',this)">Сравнить варианты</button>
+    <button class="nl" onclick="go('hist',this)">История</button>
+  </div>
+</nav>
+
+<!-- ── Мобильный tab bar ── -->
+<div class="mob-tab" id="mobTab">
+  <button class="mob-tab-btn on" onclick="mobGo('home',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span>Главная</span>
+  </button>
+  <button class="mob-tab-btn" onclick="mobGo('est',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+    <span>Оценить</span>
+  </button>
+  <button class="mob-tab-btn" onclick="mobGo('map',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+    <span>Карта</span>
+  </button>
+  <button class="mob-tab-btn" onclick="mobGo('check',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+    <span>Проверить</span>
+  </button>
+  <button class="mob-tab-btn" onclick="mobGo('cmp',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    <span>Сравнить</span>
+  </button>
+  <button class="mob-tab-btn" onclick="mobGo('hist',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <span>История</span>
+  </button>
+</div>
+
+<!-- ══════════ PAGE 1: ГЛАВНАЯ ══════════ -->
+<div class="pg on" id="pg-home">
+
+  <!-- HERO -->
+  <div class="hero">
+    <canvas id="hero-canvas" aria-hidden="true"></canvas>
+    <div class="hero-aurora" aria-hidden="true"></div>
+    <div class="hero-grid" aria-hidden="true"></div>
+
+    <div class="hero-inner">
+      <div class="hero-badge">
+        <span class="hero-badge-dot"></span>
+        Новосибирская область · Жильё · Оценка жилья
+      </div>
+      <h1 class="h1">
+        Узнайте справедливую<br>
+        цену вашей квартиры <em>за 10 секунд</em><span class="h1-cursor"></span>
+      </h1>
+      <p class="hero-sub">Система анализирует тысячи объявлений о продаже жилья в НСО и называет рыночную цену — без риэлторов и ручных расчётов.</p>
+      <div class="hero-cta">
+        <button class="btn btn-violet" onclick="go('est',document.querySelectorAll('.nl')[1])">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg>
+          Оценить квартиру
+        </button>
+        <button class="btn btn-ghost" onclick="go('map',document.querySelectorAll('.nl')[2])">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+          Карта цен по районам
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- СЕКЦИЯ: ЧТО УМЕЕТ СИСТЕМА -->
+  <div class="feat-section">
+    <div class="feat-section-head">
+      <div class="feat-section-eye">Что умеет система</div>
+      <div class="feat-section-title">Всё для оценки и выбора жилья</div>
+    </div>
+    <div class="feat-grid">
+
+      <div class="feat" onclick="go('est',document.querySelectorAll('.nl')[1])">
+        <div class="feat-num">01</div>
+        <div class="feat-ico feat-ico--g">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        </div>
+        <h3>Оценить квартиру</h3>
+        <p>Укажите район, площадь, этаж — система назовёт рыночную цену и объяснит, что на неё влияет.</p>
+        <div class="feat-go">Перейти →</div>
+        <div class="feat-shine"></div>
+      </div>
+
+      <div class="feat" onclick="go('map',document.querySelectorAll('.nl')[2])">
+        <div class="feat-num">02</div>
+        <div class="feat-ico feat-ico--b">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+        </div>
+        <h3>Карта цен по районам</h3>
+        <p>Интерактивная карта Новосибирска: нажми на любой район и узнай среднюю цену за квадратный метр.</p>
+        <div class="feat-go">Открыть карту →</div>
+        <div class="feat-shine"></div>
+      </div>
+
+      <div class="feat" onclick="go('check',document.querySelectorAll('.nl')[3])">
+        <div class="feat-num">03</div>
+        <div class="feat-ico feat-ico--p">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+        <h3>Проверить объявление</h3>
+        <p>Нашли квартиру на Авито или ЦИАН? Введите цену — система скажет, справедлива она или завышена.</p>
+        <div class="feat-go">Проверить →</div>
+        <div class="feat-shine"></div>
+      </div>
+
+      <div class="feat" onclick="go('cmp',document.querySelectorAll('.nl')[4])">
+        <div class="feat-num">04</div>
+        <div class="feat-ico feat-ico--t">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        </div>
+        <h3>Сравнить варианты</h3>
+        <p>Несколько квартир на выбор? Добавьте их — система сравнит и объяснит, какой вариант выгоднее.</p>
+        <div class="feat-go">Сравнить →</div>
+        <div class="feat-shine"></div>
+      </div>
+
+      <div class="feat" onclick="go('hist',document.querySelectorAll('.nl')[5])">
+        <div class="feat-num">05</div>
+        <div class="feat-ico feat-ico--a">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <h3>История оценок</h3>
+        <p>Все квартиры, которые вы смотрели — в одном месте. Легко вернуться и сравнить через время.</p>
+        <div class="feat-go">Открыть →</div>
+        <div class="feat-shine"></div>
+      </div>
+
+      <div class="feat feat--info">
+        <div class="feat-num" style="opacity:.3">06</div>
+        <div class="feat-ico feat-ico--r">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <h3>Как это работает?</h3>
+        <p>Модель обучена на 330 000 реальных объявлений НСО за 2025–2026 год. Учитывает район, тип дома, этаж, площадь и другие факторы.</p>
+        <div class="feat-shine"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ PAGE 2: ОЦЕНИТЬ ══════════ -->
+<div class="pg" id="pg-est">
+  <div class="est-wrap" id="estWrap">
+
+    <!-- ЛЕВАЯ КОЛОНКА: форма -->
+    <div class="form-box">
+      <div class="form-hd"><h2>Параметры квартиры</h2><p>Заполните — займёт меньше минуты</p></div>
+      <div class="form-bd">
+
+        <!-- Район с поиском -->
+        <div class="fl" style="position:relative">
+          <label>Район / город НСО</label>
+          <input type="text" id="e_d_input" placeholder="Начните вводить район…"
+            autocomplete="off"
+            oninput="districtSearch(this.value)"
+            onfocus="districtSearch(this.value)"
+            onkeydown="districtKeydown(event)">
+          <div id="districtDropdown"
+            style="display:none;position:absolute;top:100%;left:0;right:0;z-index:200;
+                   background:#fff;border:1.5px solid var(--surf3);border-radius:10px;
+                   box-shadow:0 8px 24px rgba(0,0,0,.12);max-height:220px;overflow-y:auto;
+                   margin-top:4px"></div>
+          <input type="hidden" id="e_lat" value="">
+          <input type="hidden" id="e_lon" value="">
+        </div>
+
+        <div class="fl"><label>Рынок</label>
+          <select id="e_ot">
+            <option value="" disabled selected>Выберите…</option>
+            <option value="1">Вторичное жильё</option>
+            <option value="2">Новостройка</option>
+          </select>
+        </div>
+        <div class="fl"><label>Тип дома</label>
+          <select id="e_bt">
+            <option value="" disabled selected>Выберите…</option>
+            <option value="1">Панельный</option>
+            <option value="2">Монолитный</option>
+            <option value="3">Кирпичный</option>
+            <option value="4">Блочный</option>
+            <option value="5">Деревянный</option>
+            <option value="0">Другой</option>
+          </select>
+        </div>
+        <div class="fl2">
+          <div class="fl"><label>Площадь, м²</label>
+            <input type="number" id="e_a" min="10" max="300">
+          </div>
+          <div class="fl"><label>Комнат</label>
+            <input type="number" id="e_r" min="1" max="6">
+          </div>
+        </div>
+        <div class="fl2">
+          <div class="fl"><label>Этаж</label>
+            <input type="number" id="e_fl" min="1" max="40">
+          </div>
+          <div class="fl"><label>Кухня, м²</label>
+            <input type="number" id="e_k" min="3" max="50">
+          </div>
+        </div>
+        <input type="hidden" id="e_fls" value="9">
+        <input type="hidden" id="e_y"   value="2019">
+        <input type="hidden" id="e_mo"  value="6">
+        <button class="btn-calc" onclick="doEstimate()">🔮 Рассчитать стоимость</button>
+      </div>
+    </div>
+
+    <!-- СРЕДНЯЯ КОЛОНКА: результат + факторы -->
+    <div class="res-col">
+      <div class="price-card">
+        <div class="pc-lbl">Рыночная стоимость вашей квартиры</div>
+        <div class="pc-price" id="r_price" style="color:rgba(255,255,255,.22)">—</div>
+        <div class="pc-sqm"   id="r_sqm"   style="min-height:20px"></div>
+        <div class="pc-range" id="r_range"  style="display:none"></div>
+
+        <div id="r_hint" style="margin-top:22px;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:18px">📍</span>
+            <span style="font-size:13px;color:rgba(255,255,255,.55)">Выберите район</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:18px">📐</span>
+            <span style="font-size:13px;color:rgba(255,255,255,.55)">Укажите площадь и комнаты</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:18px">🔮</span>
+            <span style="font-size:13px;color:rgba(255,255,255,.55)">Нажмите «Рассчитать»</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="verdict-strip vs-amber" id="r_verdict" style="display:none">
+        <div class="vs-icon">💛</div>
+        <div>
+          <div class="vs-title" id="r_vt"></div>
+          <div class="vs-desc"  id="r_vd"></div>
+        </div>
+      </div>
+
+      <div class="factors-card">
+        <h3>Что повлияло на цену</h3>
+        <p class="sub">Главные факторы, которые учла система</p>
+        <div id="factors_list">
+          <div style="font-size:13px;color:var(--ink3);padding:8px 0">
+            Нажмите «Рассчитать» чтобы увидеть факторы
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ПРАВАЯ КОЛОНКА: похожие (показывается после расчёта) -->
+    <div id="similarCard" style="display:none">
+      <div style="background:#fff;border-radius:14px;padding:20px;
+                  box-shadow:0 2px 12px rgba(0,0,0,.06);position:sticky;top:20px">
+        <div style="font-size:14px;font-weight:800;color:var(--ink);margin-bottom:4px">
+          🏘 Похожие квартиры
+        </div>
+        <p class="sub" style="margin:0 0 14px;font-size:12px">
+          Реальные объявления из датасета — рыночный контекст
+        </p>
+        <div id="similarList"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════ PAGE 3: КАРТА ══════════ -->
+<div class="pg" id="pg-map">
+  <div class="map-page">
+    <div class="map-toolbar">
+      <h2>Карта Новосибирской области</h2>
+      <button class="mode-btn on" id="mb_heat" onclick="setMapMode('heat',this)">🌡️ Цены по районам</button>
+      
+    </div>
+    <div style="position:relative;flex:1;min-height:calc(100vh - 110px)">
+      <div id="leafmap" style="width:100%;height:calc(100vh - 110px)"></div>
+      <div id="mapLegend" style="position:absolute;bottom:32px;right:12px;z-index:1000;
+        background:#fff;border:1px solid var(--bdr);border-radius:var(--r2);padding:14px 16px;min-width:160px;box-shadow:0 4px 20px rgba(0,0,0,0.12)">
+        <div style="font-size:11px;font-weight:700;color:var(--ink);margin-bottom:8px">Цена за м²</div>
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:5px;font-size:11px"><span style="width:14px;height:14px;border-radius:3px;background:#1a6e4a;display:inline-block"></span>от 120 тыс. ₽</div>
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:5px;font-size:11px"><span style="width:14px;height:14px;border-radius:3px;background:#2e9e6e;display:inline-block"></span>90–120 тыс. ₽</div>
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:5px;font-size:11px"><span style="width:14px;height:14px;border-radius:3px;background:#f5a623;display:inline-block"></span>60–90 тыс. ₽</div>
+        <div style="display:flex;align-items:center;gap:7px;font-size:11px"><span style="width:14px;height:14px;border-radius:3px;background:#e05252;display:inline-block"></span>до 60 тыс. ₽</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ PAGE 4: ПРОВЕРИТЬ ══════════ -->
+<div class="pg" id="pg-check">
+  <div class="chk-page">
+
+    <div class="chk-header">
+      <div>
+        <div class="tag" style="color:var(--green2)">// проверка объявления</div>
+        <div class="h2" style="margin:4px 0 0;font-size:22px">Справедлива ли цена продавца?</div>
+      </div>
+      <p class="sub" style="margin:0;max-width:460px;font-size:13px;align-self:flex-end">
+        Модель оценит ваше объявление и объяснит каждый рубль</p>
+    </div>
+
+    <div class="chk-form">
+      <div class="chk-field" style="position:relative;flex:2;min-width:160px">
+        <label>Район / город НСО</label>
+        <input type="text" id="c_d_input" placeholder="Начните вводить…"
+          autocomplete="off"
+          oninput="checkDistrictSearch(this.value)"
+          onfocus="checkDistrictSearch(this.value)"
+          onkeydown="checkDistrictKeydown(event)">
+        <div id="checkDistrictDropdown"
+          style="display:none;position:absolute;top:100%;left:0;right:0;z-index:300;
+                 background:#fff;border:1.5px solid var(--surf3);border-radius:10px;
+                 box-shadow:0 8px 24px rgba(0,0,0,.14);max-height:200px;overflow-y:auto;
+                 margin-top:4px"></div>
+        <input type="hidden" id="c_lat" value="">
+        <input type="hidden" id="c_lon" value="">
+      </div>
+      <div class="chk-field"><label>Площадь, м²</label><input type="number" id="c_a" min="15" max="300" placeholder="42"></div>
+      <div class="chk-field"><label>Комнат</label><input type="number" id="c_r" min="1" max="6" placeholder="2"></div>
+      <div class="chk-field"><label>Этаж</label><input type="number" id="c_fl" min="1" max="40" placeholder="5"></div>
+      <div class="chk-field"><label>Кухня, м²</label><input type="number" id="c_k" min="4" max="40" placeholder="9"></div>
+      <div class="chk-field" style="min-width:120px">
+        <label>Тип дома</label>
+        <select id="c_b">
+          <option value="" disabled selected>—</option>
+          <option value="2">Монолит</option>
+          <option value="1">Панель</option>
+          <option value="3">Кирпич</option>
+          <option value="4">Блок</option>
+          <option value="5">Дерево</option>
+          <option value="0">Другой</option>
+        </select>
+      </div>
+      <div class="chk-field" style="min-width:110px">
+        <label>Рынок</label>
+        <select id="c_ot">
+          <option value="" disabled selected>—</option>
+          <option value="1">Вторичка</option>
+          <option value="2">Новостройка</option>
+        </select>
+      </div>
+      <div class="chk-field" style="flex:1.5;min-width:150px">
+        <label>Цена в объявлении, ₽</label>
+        <input type="number" id="c_p" min="300000" max="50000000" step="50000" placeholder="4 300 000">
+      </div>
+      <button class="chk-btn" onclick="doCheck()">Разобрать →</button>
+    </div>
+
+    <div class="chk-body">
+      <div id="checkHint" class="chk-hint">
+        <div style="font-size:48px;margin-bottom:16px">🔍</div>
+        <div style="font-size:17px;font-weight:700;color:var(--ink);margin-bottom:8px">Введите данные из объявления</div>
+        <div style="font-size:13px;color:#637b95">Система сравнит цену продавца с рыночной оценкой XGBoost<br>и покажет вклад каждого фактора в рублях</div>
+      </div>
+
+      <div id="checkLoader" style="display:none;text-align:center;padding:60px 20px;color:#637b95;font-size:14px">
+        ⏳ XGBoost + SHAP анализируют...
+      </div>
+      <div id="checkError" style="display:none;color:var(--red2);padding:16px 20px;font-size:13px;
+           background:#fdf0ee;border-radius:12px;margin:16px"></div>
+
+      <div id="checkResult" style="display:none;width:100%;height:100%">
+        <div style="display:flex;align-items:center;justify-content:center;height:100%">
+          <div id="bvBox" class="bv2 bv2-amber" style="margin:0;width:100%">
+            <div class="bv2-ico" id="bv_ico">⚠️</div>
+            <div class="bv2-title" id="bv_title">Цена завышена</div>
+            <div class="bv2-sub"  id="bv_sub">Продавец просит больше рынка.</div>
+            <div class="bv2-row"><span class="bv2-key">В объявлении</span><span class="bv2-val" id="bv_listed">—</span></div>
+            <div class="bv2-row"><span class="bv2-key">Модель XGBoost</span><span class="bv2-val" id="bv_model">—</span></div>
+            <div class="bv2-row"><span class="bv2-key">Диапазон</span><span class="bv2-val" id="bv_range" style="font-size:12px;color:#637b95">—</span></div>
+            <div class="bv2-row"><span class="bv2-key">Разница</span><span class="bv2-val" id="bv_diff">—</span></div>
+            <div class="bv2-row"><span class="bv2-key">Цена за м²</span><span class="bv2-val" id="bv_sqm">—</span></div>
+            <div class="bv2-row" id="bv_suggest_row" style="display:none">
+              <span class="bv2-key">Предложить</span>
+              <span class="bv2-val" id="bv_suggest" style="color:var(--green)">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="background:#fff;border-radius:14px;padding:20px 22px;
+                    box-shadow:0 2px 12px rgba(0,0,0,.06);
+                    height:100%;overflow-y:auto;box-sizing:border-box">
+          <div style="font-size:14px;font-weight:800;margin-bottom:3px">🔬 Вклад каждого фактора</div>
+          <p class="sub" style="font-size:11px;margin:0 0 14px">
+            База модели: <b id="shap_base">—</b> — как параметры смещают цену
+          </p>
+          <div id="shapWaterfall"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════ PAGE 5: СРАВНИТЬ ══════════ -->
+<div class="pg" id="pg-cmp">
+  <div class="cmp2-page">
+
+    <!-- СОСТОЯНИЕ 1: ФОРМА ВВОДА -->
+    <div id="cmpFormSection">
+      <div style="margin-bottom:28px">
+        <div class="tag">// сравнение вариантов</div>
+        <div class="h2">Какой вариант выбрать?</div>
+        <p class="sub">Введите параметры из объявлений — система оценит каждую, сравнит с ценой продавца и скажет, какой вариант выгоднее и почему.</p>
+      </div>
+
+      <div id="cmpInputs" style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px"></div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:32px;align-items:center">
+        <button class="btn btn-ink" onclick="doCmpAnalyze()" style="padding:11px 28px;font-size:14px">
+          Сравнить →
+        </button>
+        <button id="cmpAddBtn" onclick="cmpAddCard()"
+          style="padding:11px 18px;background:#fff;border:1.5px dashed var(--surf3);
+                 border-radius:10px;color:#637b95;font-size:13px;cursor:pointer;
+                 font-family:var(--sans)">
+          + Добавить вариант
+        </button>
+      </div>
+    </div>
+
+    <div id="cmpLoader" style="display:none;text-align:center;padding:48px;color:#637b95;font-size:14px">
+      ⏳ XGBoost анализирует варианты...
+    </div>
+    <div id="cmpError" style="display:none;color:var(--red2);padding:16px;font-size:13px;
+         background:#fdf0ee;border-radius:10px"></div>
+
+    <!-- СОСТОЯНИЕ 2: РЕЗУЛЬТАТЫ -->
+    <div id="cmpResult" style="display:none">
+      <!-- Кнопки управления сверху -->
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:24px;flex-wrap:wrap">
+        <button onclick="cmpShowForm()" style="padding:9px 18px;background:#fff;border:1.5px solid var(--surf3);
+               border-radius:10px;color:var(--ink2);font-size:13px;cursor:pointer;
+               font-family:var(--sans);font-weight:600">
+          ← Вернуться к форме
+        </button>
+        <button onclick="document.getElementById('cmpShapTable').scrollIntoView({behavior:'smooth'})"
+               style="padding:9px 18px;background:var(--green2);border:none;
+               border-radius:10px;color:#fff;font-size:13px;cursor:pointer;
+               font-family:var(--sans);font-weight:600">
+          📊 Посмотреть итоги
+        </button>
+      </div>
+
+      <div id="cmpVerdict" style="margin-bottom:28px"></div>
+      <div id="cmpCards" style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:32px"></div>
+      <div style="margin-bottom:10px">
+        <div style="font-size:16px;font-weight:800;color:var(--ink);margin-bottom:4px">
+          🔬 Что влияет на цену каждого варианта
+        </div>
+        <p class="sub" style="font-size:12px;margin:0 0 16px">
+          SHAP показывает вклад каждого фактора в рублях — и как варианты отличаются между собой.
+        </p>
+      </div>
+      <div id="cmpShapTable" style="margin-bottom:28px"></div>
+      <div id="cmpSummary"></div>
+
+      <!-- Кнопка снизу -->
+      <div style="margin-top:24px">
+        <button onclick="cmpShowForm()" style="padding:9px 18px;background:#fff;border:1.5px solid var(--surf3);
+               border-radius:10px;color:var(--ink2);font-size:13px;cursor:pointer;
+               font-family:var(--sans);font-weight:600">
+          ← Вернуться к форме
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ PAGE 6: ИСТОРИЯ ══════════ -->
+<div class="pg" id="pg-hist">
+  <div class="hist-page">
+    <div style="margin-bottom:24px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
+      <div>
+        <div class="tag">// история оценок</div>
+        <div class="h2">Квартиры, которые вы смотрели</div>
+      </div>
+      <button onclick="histClear()" id="histClearBtn"
+        style="display:none;padding:8px 16px;background:#fff;border:1.5px solid #f0d0d0;
+               border-radius:10px;color:var(--red2);font-size:12px;font-weight:600;
+               cursor:pointer;font-family:var(--sans)">
+        🗑 Очистить историю
+      </button>
+    </div>
+
+    <div class="hist-kpis" id="histKpis">
+      <div class="hk"><div class="hk-v" id="hk_total">0</div><div class="hk-l">всего оценок</div></div>
+      <div class="hk"><div class="hk-v" style="color:var(--red2)"  id="hk_over">0</div><div class="hk-l">🔴 завышены</div></div>
+      <div class="hk"><div class="hk-v" style="color:var(--green)" id="hk_fair">0</div><div class="hk-l">🟢 справедливые</div></div>
+      <div class="hk"><div class="hk-v" style="color:var(--blue2)" id="hk_good">0</div><div class="hk-l">🔵 выгодные</div></div>
+    </div>
+
+    <div class="card" id="histBar" style="display:none;margin-bottom:16px;padding:16px 20px">
+      <div style="font-size:12px;color:var(--ink3);margin-bottom:8px;font-weight:600">Соотношение проверенных объявлений</div>
+      <div style="display:flex;gap:3px;margin-bottom:10px;border-radius:6px;overflow:hidden;height:10px" id="histBarTrack"></div>
+      <div style="display:flex;gap:18px" id="histBarLegend"></div>
+    </div>
+
+    <div class="hist-controls" id="histControls" style="display:none">
+      <input class="hist-search" id="histSearch" placeholder="Поиск по адресу или характеристикам…" oninput="histRender()">
+      <button class="filter-btn on" onclick="histFilter(this,'all')">Все</button>
+      <button class="filter-btn" onclick="histFilter(this,'high')">🔴 Завышены</button>
+      <button class="filter-btn" onclick="histFilter(this,'ok')">🟢 Справедливые</button>
+      <button class="filter-btn" onclick="histFilter(this,'low')">🔵 Выгодные</button>
+    </div>
+
+    <div id="histList"></div>
+
+    <div id="histEmpty" style="display:none;text-align:center;padding:64px 20px">
+      <div style="font-size:48px;margin-bottom:16px">🏠</div>
+      <div style="font-size:18px;font-weight:700;color:var(--ink);margin-bottom:8px">
+        Вы ещё не оценивали квартиры
+      </div>
+      <div style="font-size:14px;color:#637b95;margin-bottom:24px">
+        Оцените первую квартиру — она появится здесь с полным разбором цены
+      </div>
+      <button class="btn btn-green" onclick="go('est',document.querySelectorAll('.nl')[1])"
+        style="padding:12px 28px">
+        Оценить квартиру →
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО ИСТОРИИ -->
+<div id="histModal" onclick="if(event.target===this)histCloseModal()"
+  style="display:none;position:fixed;inset:0;background:rgba(10,20,40,.45);
+         z-index:9000;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:18px;width:100%;max-width:480px;
+              max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25);
+              font-family:var(--sans);position:relative">
+    <div style="padding:20px 24px 0;display:flex;align-items:center;justify-content:space-between;
+                position:sticky;top:0;background:#fff;border-radius:18px 18px 0 0;
+                border-bottom:1px solid #f0f2f5;padding-bottom:14px;margin-bottom:0">
+      <div style="font-size:15px;font-weight:800;color:#1a1a2e">Подробности оценки</div>
+      <button onclick="histCloseModal()"
+        style="background:none;border:none;cursor:pointer;color:#aaa;font-size:22px;
+               line-height:1;padding:4px 8px"
+        onmouseover="this.style.color='#1a1a2e'" onmouseout="this.style.color='#aaa'">×</button>
+    </div>
+    <div id="histModalBody" style="padding:20px 24px 24px"></div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/leaflet_bundle.js') }}"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script>
+(function(){
+  var canvas=document.getElementById('hero-canvas');
+  if(!canvas)return;
+  var ctx=canvas.getContext('2d');
+  function resize(){canvas.width=canvas.offsetWidth;canvas.height=canvas.offsetHeight}
+  resize();
+  window.addEventListener('resize',resize);
+  var pts=[];
+  for(var i=0;i<60;i++){
+    pts.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,
+      vx:(Math.random()-.5)*.22,vy:(Math.random()-.5)*.22,
+      r:Math.random()*1.4+.4,o:Math.random()*.4+.12});
+  }
+  function draw(){
+    canvas.width=canvas.offsetWidth;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    for(var i=0;i<pts.length;i++){
+      var p=pts[i];
+      p.x+=p.vx;p.y+=p.vy;
+      if(p.x<0)p.x=canvas.width;if(p.x>canvas.width)p.x=0;
+      if(p.y<0)p.y=canvas.height;if(p.y>canvas.height)p.y=0;
+      for(var j=i+1;j<pts.length;j++){
+        var q=pts[j],dx=p.x-q.x,dy=p.y-q.y,d=Math.sqrt(dx*dx+dy*dy);
+        if(d<95){ctx.beginPath();ctx.strokeStyle='rgba(99,130,255,'+(1-d/95)*.1+')';ctx.lineWidth=.5;ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.stroke()}
+      }
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,6.28);
+      ctx.fillStyle='rgba(139,163,255,'+p.o+')';ctx.fill();
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+</script>
+</body>
+</html>
