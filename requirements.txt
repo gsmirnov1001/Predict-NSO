@@ -1,0 +1,8 @@
+flask==3.1.1
+xgboost==2.1.4
+joblib==1.4.2
+numpy==1.26.4
+shap==0.46.0
+gunicorn==23.0.0
+pandas==2.2.3
+scikit-learn==1.5.2
